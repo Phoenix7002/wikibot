@@ -19,7 +19,7 @@ config = {
     "guild_id": 1040938900039929917,
     "channel_id": 1060574644240912495,
     "allowed_role_ids": [1060574682971119627, 1254852832130236466, 1052215941938827295, 1043226064517865563],
-    "yougile_api_token": "lnhuZXl3cwEzqrj2LtzBnD2pZ4bzF7pxuJLfKDJvEZqJiXF+xCuCvE80LP-+Wbc5",
+    "yougile_api_token": os.getenv("YOUGILE_API_TOKEN"),
     "board_id": "45c9040a-8323-4d02-906d-a30035513ea3",
     "column_ids": {
         "Свободные": "a7dcfed3-8a7a-409c-b440-368e36e10cba",
