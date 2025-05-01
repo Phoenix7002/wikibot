@@ -167,7 +167,7 @@ async def update_list(interaction: discord.Interaction):
         await interaction.response.send_message("У вас нет прав для выполнения этой команды.", ephemeral=True)
         return
     if not update_task_message.is_running():
-        await interaction.response.send_message("Цикл не запущен. Используйте /ystart.", ephemeral=True)
+        await interaction.response.send_message("Цикл не запущен. Используйте /start-update.", ephemeral=True)
         return
     await interaction.response.send_message("Обновление задач...", ephemeral=True)
     await send_task_message()
