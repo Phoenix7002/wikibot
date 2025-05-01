@@ -5,6 +5,10 @@ import requests
 import logging
 import asyncio
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", handlers=[
     logging.StreamHandler(),
@@ -12,7 +16,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 ])
 
 config = {
-    "token": "Ваш дискорд айди бота",
     "guild_id": 1040938900039929917,
     "channel_id": 1060574644240912495,
     "allowed_role_ids": [1060574682971119627, 1254852832130236466, 1052215941938827295, 1043226064517865563],
@@ -181,4 +184,4 @@ async def on_ready():
     synced = await bot.tree.sync(guild=discord.Object(id=config['guild_id']))
     logging.info(f"Синхронизировано {len(synced)} команд.")
 
-bot.run(config['token'])
+bot.run(os.getenv("BOT_TOKEN"))
