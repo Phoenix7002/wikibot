@@ -112,7 +112,7 @@ async def send_task_message():
     except discord.Forbidden:
         logging.warning("Не удалось закрепить сообщение — недостаточно прав.")
 
-@bot.tree.command(name="send_list", description="Отправить список задач", guild=discord.Object(id=config['guild_id']))
+@bot.tree.command(name="send-list", description="Отправить список задач", guild=discord.Object(id=config['guild_id']))
 async def send_list(interaction: discord.Interaction):
     if interaction.channel_id != config["channel_id"]:
         await interaction.response.send_message("Эта команда доступна только в специальном канале.", ephemeral=True)
@@ -126,7 +126,7 @@ async def send_list(interaction: discord.Interaction):
     await send_task_message()
     logging.info(f"Задачи отправлены пользователем {interaction.user}")
 
-@bot.tree.command(name="start_update", description="Запустить автоматическое обновление списка", guild=discord.Object(id=config['guild_id']))
+@bot.tree.command(name="start-update", description="Запустить автоматическое обновление списка", guild=discord.Object(id=config['guild_id']))
 async def start_update(interaction: discord.Interaction):
     global is_updating
     if interaction.channel_id != config["channel_id"]:
@@ -144,7 +144,7 @@ async def start_update(interaction: discord.Interaction):
     is_updating = True
     logging.info("Автоматическое обновление задач запущено.")
 
-@bot.tree.command(name="stop_update", description="Остановить автоматическое обновление списка", guild=discord.Object(id=config['guild_id']))
+@bot.tree.command(name="stop-update", description="Остановить автоматическое обновление списка", guild=discord.Object(id=config['guild_id']))
 async def stop_update(interaction: discord.Interaction):
     global is_updating
     if interaction.channel_id != config["channel_id"]:
@@ -158,7 +158,7 @@ async def stop_update(interaction: discord.Interaction):
     await interaction.response.send_message("Цикл обновления остановлен.", ephemeral=True)
     logging.info("Автоматическое обновление задач остановлено.")
 
-@bot.tree.command(name="update_list", description="Обновить задачи вручную", guild=discord.Object(id=config['guild_id']))
+@bot.tree.command(name="update-list", description="Обновить задачи вручную", guild=discord.Object(id=config['guild_id']))
 async def update_list(interaction: discord.Interaction):
     if interaction.channel_id != config["channel_id"]:
         await interaction.response.send_message("Эта команда доступна только в специальном канале.", ephemeral=True)
