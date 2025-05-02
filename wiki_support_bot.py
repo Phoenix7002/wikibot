@@ -29,7 +29,7 @@ config = {
 }
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 is_updating = False
 
 def has_allowed_role(user: discord.Member) -> bool:
