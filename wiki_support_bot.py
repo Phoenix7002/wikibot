@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 ])
 
 config = {
-    "guild_id": 1344003837668622408,
-    "channel_id": 1344005020479131738,
+    "guild_id": 1040938900039929917,
+    "channel_id": 1060574644240912495,
     "yougile_api_token": os.getenv("YOUGILE_API_TOKEN"),
     "board_id": "45c9040a-8323-4d02-906d-a30035513ea3",
     "column_ids": {
