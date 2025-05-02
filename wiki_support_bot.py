@@ -16,9 +16,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 ])
 
 config = {
-    "guild_id": 1040938900039929917,
-    "channel_id": 1060574644240912495,
-    "allowed_role_ids": [1060574682971119627, 1254852832130236466, 1052215941938827295, 1043226064517865563],
+    "guild_id": 1344003837668622408,
+    "channel_id": 1344005020479131738,
     "yougile_api_token": os.getenv("YOUGILE_API_TOKEN"),
     "board_id": "45c9040a-8323-4d02-906d-a30035513ea3",
     "column_ids": {
@@ -32,39 +31,26 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="/", intents=intents)
 is_updating = False
 
-def has_allowed_role(user: discord.Member) -> bool:
-    return any(role.id in config["allowed_role_ids"] for role in user.roles)
-
 def get_tasks_from_yougile(column_id):
     url = "https://ru.yougile.com/api-v2/task-list"
     headers = {
         'Authorization': f"Bearer {config['yougile_api_token']}",
         'Content-Type': 'application/json'
     }
-    params = {
-        "columnId": column_id
-    }
+    params = {"columnId": column_id}
 
     try:
         logging.info(f"Запрос задач из колонки: {column_id}")
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
-
         if not response.text.strip():
             logging.warning(f"Пустой ответ от YouGile для колонки {column_id}")
             return []
-
         data = response.json()
-        tasks = data.get("content", [])
-        logging.info(f"Получено {len(tasks)} задач из колонки {column_id}")
-        return tasks
-
-    except requests.exceptions.RequestException as e:
+        return data.get("content", [])
+    except Exception as e:
         logging.error(f"Ошибка при запросе: {e}")
-    except ValueError as e:
-        logging.error(f"Ошибка при разборе JSON: {e}, текст ответа: {response.text}")
-
-    return []
+        return []
 
 def format_tasks_for_message(tasks, column_name):
     if not tasks:
@@ -84,6 +70,7 @@ def format_tasks_for_message(tasks, column_name):
     return "\n".join(lines)
 
 async def send_task_message():
+    global free_column_tasks
     channel = bot.get_channel(config['channel_id'])
     if not channel:
         logging.error("Канал не найден")
@@ -92,9 +79,11 @@ async def send_task_message():
     tasks_text = []
     for column_name, column_id in config['column_ids'].items():
         column_tasks = get_tasks_from_yougile(column_id)
+        if column_name == "Свободные":
+            free_column_tasks = column_tasks  # Кэшируем
         formatted = format_tasks_for_message(column_tasks, column_name)
         tasks_text.append(f"## {column_name}\n{formatted}")
-    
+
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     message = "\n".join(tasks_text) + f"\n\n-# {now}"
 
@@ -104,7 +93,6 @@ async def send_task_message():
             await msg.edit(content=message)
             return
 
-    logging.info("Отправка нового сообщения с задачами")
     sent_message = await channel.send(message)
     try:
         await sent_message.pin()
@@ -114,14 +102,6 @@ async def send_task_message():
 
 @bot.tree.command(name="send-list", description="Отправить список задач", guild=discord.Object(id=config['guild_id']))
 async def send_list(interaction: discord.Interaction):
-    if interaction.channel_id != config["channel_id"]:
-        await interaction.response.send_message("Эта команда доступна только в специальном канале.", ephemeral=True)
-        return
-    if not has_allowed_role(interaction.user):
-        logging.warning(f"Нет прав у {interaction.user}")
-        await interaction.response.send_message("У вас нет прав для выполнения команды.", ephemeral=True)
-        return
-
     await interaction.response.send_message("Отправка задач...", ephemeral=True)
     await send_task_message()
     logging.info(f"Задачи отправлены пользователем {interaction.user}")
@@ -129,12 +109,6 @@ async def send_list(interaction: discord.Interaction):
 @bot.tree.command(name="start-update", description="Запустить автоматическое обновление списка", guild=discord.Object(id=config['guild_id']))
 async def start_update(interaction: discord.Interaction):
     global is_updating
-    if interaction.channel_id != config["channel_id"]:
-        await interaction.response.send_message("Эта команда доступна только в специальном канале.", ephemeral=True)
-        return
-    if not has_allowed_role(interaction.user):
-        await interaction.response.send_message("У вас нет прав для выполнения этой команды.", ephemeral=True)
-        return
     if is_updating:
         logging.info("Попытка повторного запуска уже активного цикла обновления.")
         await interaction.response.send_message("Цикл уже запущен.", ephemeral=True)
@@ -147,12 +121,6 @@ async def start_update(interaction: discord.Interaction):
 @bot.tree.command(name="stop-update", description="Остановить автоматическое обновление списка", guild=discord.Object(id=config['guild_id']))
 async def stop_update(interaction: discord.Interaction):
     global is_updating
-    if interaction.channel_id != config["channel_id"]:
-        await interaction.response.send_message("Эта команда доступна только в специальном канале.", ephemeral=True)
-        return
-    if not has_allowed_role(interaction.user):
-        await interaction.response.send_message("У вас нет прав для выполнения этой команды.", ephemeral=True)
-        return
     update_task_message.stop()
     is_updating = False
     await interaction.response.send_message("Цикл обновления остановлен.", ephemeral=True)
@@ -160,18 +128,26 @@ async def stop_update(interaction: discord.Interaction):
 
 @bot.tree.command(name="update-list", description="Обновить задачи вручную", guild=discord.Object(id=config['guild_id']))
 async def update_list(interaction: discord.Interaction):
-    if interaction.channel_id != config["channel_id"]:
-        await interaction.response.send_message("Эта команда доступна только в специальном канале.", ephemeral=True)
-        return
-    if not has_allowed_role(interaction.user):
-        await interaction.response.send_message("У вас нет прав для выполнения этой команды.", ephemeral=True)
-        return
     if not update_task_message.is_running():
         await interaction.response.send_message("Цикл не запущен. Используйте /start-update.", ephemeral=True)
         return
     await interaction.response.send_message("Обновление задач...", ephemeral=True)
     await send_task_message()
     logging.info(f"Задачи обновлены пользователем {interaction.user}")
+
+@bot.tree.command(name="task-desc", description="Показать описание задачи из Свободных", guild=discord.Object(id=config['guild_id']))
+@app_commands.describe(task_name="Имя задачи")
+async def task_desc(interaction: discord.Interaction, task_name: str):
+    if "free_column_tasks" not in globals() or not isinstance(free_column_tasks, list):
+        await interaction.response.send_message("Не удаётся обнаружить список задач.", ephemeral=True)
+        return
+    for task in free_column_tasks:
+        if task["title"].lower() == task_name.lower():
+            raw_desc = task.get("description", "Нет описания.")
+            formatted_desc = raw_desc.replace("<p>", "").replace("</p>", "").replace("&nbsp;", "​").replace("<br>", "​").replace("<strong>", "**").replace("</strong>", "**").replace("<em>", "*").replace("</em>", "*")
+            await interaction.response.send_message(f"**{task['title']}**\n{formatted_desc}")
+            return
+    await interaction.response.send_message("Задача не найдена в колонке 'Свободные'.", ephemeral=True)
 
 @tasks.loop(minutes=60)
 async def update_task_message():
