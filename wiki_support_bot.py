@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 import json
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -142,6 +143,25 @@ async def update_list(interaction: discord.Interaction):
     await send_task_message()
     logging.info(f"Задачи обновлены пользователем {interaction.user}")
 
+def html_to_discord(text):
+    replacements = [
+        ("<strong>", "**"), ("</strong>", "**"),
+        ("<em>", "*"), ("</em>", "*"),
+        ("<p>", ""), ("</p>", "\n\n"),
+        ("<br>", "\n"),
+        ("&nbsp;", " "),
+    ]
+    for old, new in replacements:
+        text = text.replace(old, new)
+
+    text = re.sub(r"<ul>|<ol>", "", text)
+    text = re.sub(r"</ul>|</ol>", "", text)
+    text = re.sub(r"<li>", "- ", text)
+    text = re.sub(r"</li>", "\n", text)
+
+    text = re.sub(r"<.*?>", "", text)
+    return text.strip()
+
 @bot.tree.command(name="task-desc", description="Показать описание задачи по имени", guild=discord.Object(id=config['guild_id']))
 @app_commands.describe(task_name="Имя задачи")
 async def task_desc(interaction: discord.Interaction, task_name: str):
@@ -157,10 +177,10 @@ async def task_desc(interaction: discord.Interaction, task_name: str):
     if not matched_task:
         await interaction.followup.send("Задача не найдена во всех колонках.", ephemeral=True)
         return
-        
+
     raw_desc = matched_task.get("description", "Нет описания.")
-    formatted_desc = raw_desc.replace("<p>", "").replace("</p>", "").replace("&nbsp;", "​").replace("<br>", "​").replace("<strong>", "**").replace("</strong>", "**").replace("<em>", "*").replace("</em>", "*").replace("<ul>", "​").replace("</ul>", "​").replace("<ol>", "​").replace("</ol>", "​").replace("<li>", "​").replace("</li>", "​")
-    
+    formatted_desc = html_to_discord(raw_desc)
+
     embed = discord.Embed(title=matched_task['title'], description=formatted_desc, color=0xffc86e)
     await interaction.followup.send(embed=embed)
 
