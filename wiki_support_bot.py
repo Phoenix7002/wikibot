@@ -142,19 +142,27 @@ async def update_list(interaction: discord.Interaction):
     await send_task_message()
     logging.info(f"Задачи обновлены пользователем {interaction.user}")
 
-@bot.tree.command(name="task-desc", description="Показать описание задачи из Свободных", guild=discord.Object(id=config['guild_id']))
+@bot.tree.command(name="task-desc", description="Показать описание задачи по имени", guild=discord.Object(id=config['guild_id']))
 @app_commands.describe(task_name="Имя задачи")
 async def task_desc(interaction: discord.Interaction, task_name: str):
-    if "free_column_tasks" not in globals() or not isinstance(free_column_tasks, list):
-        await interaction.response.send_message("Не удаётся обнаружить список задач.", ephemeral=True)
+    await interaction.response.defer(thinking=True)
+
+    all_tasks = []
+    for column_id in config['column_ids'].values():
+        column_tasks = get_tasks_from_yougile(column_id)
+        all_tasks.extend(column_tasks)
+
+    matched_task = next((task for task in all_tasks if task["title"].lower() == task_name.lower()), None)
+
+    if not matched_task:
+        await interaction.followup.send("Задача не найдена во всех колонках.", ephemeral=True)
         return
-    for task in free_column_tasks:
-        if task["title"].lower() == task_name.lower():
-            raw_desc = task.get("description", "Нет описания.")
-            formatted_desc = raw_desc.replace("<p>", "").replace("</p>", "").replace("&nbsp;", "​").replace("<br>", "​").replace("<strong>", "**").replace("</strong>", "**").replace("<em>", "*").replace("</em>", "*").replace("<ul>", "​").replace("</ul>", "​").replace("<ol>", "​").replace("</ol>", "​").replace("<li>", "​").replace("</li>", "​")
-            await interaction.response.send_message(f"**{task['title']}**\n{formatted_desc}")
-            return
-    await interaction.response.send_message("Задача не найдена в колонке 'Свободные'.", ephemeral=True)
+        
+    raw_desc = matched_task.get("description", "Нет описания.")
+    formatted_desc = raw_desc.replace("<p>", "").replace("</p>", "").replace("&nbsp;", "​").replace("<br>", "​").replace("<strong>", "**").replace("</strong>", "**").replace("<em>", "*").replace("</em>", "*").replace("<ul>", "​").replace("</ul>", "​").replace("<ol>", "​").replace("</ol>", "​").replace("<li>", "​").replace("</li>", "​")
+    
+    embed = discord.Embed(title=matched_task['title'], description=formatted_desc, color=0xffc86e)
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="auto-pin", description="Включить/выключить автозакреп сообщений", guild=discord.Object(id=config['guild_id']))
 async def auto_pin(interaction: discord.Interaction):
