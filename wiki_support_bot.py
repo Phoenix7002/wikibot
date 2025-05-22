@@ -62,8 +62,8 @@ def format_tasks_for_message(tasks, column_name):
     for task in tasks:
         line = f"- {task['title']}"
         if column_name in ["В процессе выполнения", "Проверяются и дорабатываются"]:
-            stickers = task.get("stickers", {})
-            if stickers:
+            stickers = task.get("stickers")
+            if isinstance(stickers, dict) and stickers:
                 first_sticker_name = next(iter(stickers.values()), None)
                 if first_sticker_name:
                     line += f" — **{first_sticker_name}**"
@@ -139,6 +139,28 @@ async def update_list(interaction: discord.Interaction):
     await interaction.response.send_message("Обновление задач...", ephemeral=True)
     await send_task_message()
     logging.info(f"Задачи обновлены пользователем {interaction.user}")
+
+@bot.tree.command(name="text-train", description="Отправить обучающий инструктаж", guild=discord.Object(id=config['guild_id']))
+async def text_train(interaction: discord.Interaction):
+    await interaction.response.send_message("Отправка инструктажа...", ephemeral=True)
+    channel = bot.get_channel(config['channel_id'])
+    if not channel:
+        logging.error("Канал для инструктажа не найден")
+        return
+
+    training_texts = config.get("training_texts", [])
+    if not training_texts:
+        logging.error("В конфиге нет текстов инструктажа")
+        return
+
+    for i, part in enumerate(training_texts):
+        try:
+            await channel.send(part)
+            await asyncio.sleep(1)
+        except Exception as e:
+            logging.error(f"Ошибка при отправке части {i + 1}: {e}")
+
+    logging.info(f"Инструктаж отправлен пользователем {interaction.user}")
 
 def html_to_discord(text):
     replacements = [
