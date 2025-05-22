@@ -136,9 +136,6 @@ async def stop_update(interaction: discord.Interaction):
 
 @bot.tree.command(name="update-list", description="Обновить задачи вручную", guild=discord.Object(id=config['guild_id']))
 async def update_list(interaction: discord.Interaction):
-    if not update_task_message.is_running():
-        await interaction.response.send_message("Цикл не запущен. Используйте /start-update.", ephemeral=True)
-        return
     await interaction.response.send_message("Обновление задач...", ephemeral=True)
     await send_task_message()
     logging.info(f"Задачи обновлены пользователем {interaction.user}")
