@@ -1,4 +1,4 @@
-## 📄 Лицензия на вклад (ICLA)
+## 📄 Лицензия (ICLA)
 
 Данный проект (включая Discord-бота) защищён условиями [**Imperial Contributor License Agreement (ICLA)**](https://wiki.imperialspace.net/ru/icla).
 
