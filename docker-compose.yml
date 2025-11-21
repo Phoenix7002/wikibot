@@ -8,3 +8,4 @@ services:
     env_file: .env
     volumes:
       - .:/app
+      - ./google-creds.json:/app/google-creds.json:ro
