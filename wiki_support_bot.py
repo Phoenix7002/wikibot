@@ -98,7 +98,7 @@ async def clear_log_if_too_big():
     except Exception as e:
         logging.error(f"Ошибка при проверке размера лога: {e}")
 
-def get_tasks_from_yougile(column_id):
+async def get_tasks_from_yougile(column_id):
     url = "https://ru.yougile.com/api-v2/task-list"
     headers = {
         'Authorization': f"Bearer {os.getenv('YOUGILE_API_TOKEN')}",
@@ -107,13 +107,15 @@ def get_tasks_from_yougile(column_id):
     params = {"columnId": column_id}
     try:
         logging.info(f"Запрос задач из колонки: {column_id}")
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        if not response.text.strip():
-            logging.warning(f"Пустой ответ от YouGile для колонки {column_id}")
-            return []
-        data = response.json()
-        return data.get("content", [])
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, params=params, timeout=10) as response:
+                response.raise_for_status()
+                text = await response.text()
+                if not text.strip():
+                    logging.warning(f"Пустой ответ от YouGile для колонки {column_id}")
+                    return []
+                data = await response.json()
+                return data.get("content", [])
     except Exception as e:
         logging.error(f"Ошибка при запросе: {e}")
         return []
@@ -163,7 +165,7 @@ async def send_task_message(interaction: discord.Interaction = None):
     all_tasks = []
     for column_name, column_id in config['column_ids'].items():
         try:
-            column_tasks = get_tasks_from_yougile(column_id)
+            column_tasks = await get_tasks_from_yougile(column_id)
         except Exception as e:
             logging.error(f"Ошибка при получении задач из колонки '{column_name}': {e}")
             if interaction:
@@ -1977,3 +1979,4 @@ try:
     bot.run(os.getenv("BOT_TOKEN"))
 except Exception as e:
     logging.critical(f"Не удалось запустить бота: {e}")
+
